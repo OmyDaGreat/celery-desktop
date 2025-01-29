@@ -7,11 +7,12 @@ plugins {
     alias(libs.plugins.compose)
 }
 
-group = "xyz.malefic.compose"
+group = "xyz.malefic.celery"
 version = "1.0.0"
 
 repositories {
     mavenCentral()
+    mavenLocal()
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     google()
 }
@@ -25,18 +26,18 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "xyz.malefic.compose.MainKt"
+        mainClass = "xyz.malefic.celery.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "ComposeDesktopTemplate"
+            packageName = "Celery Desktop"
             packageVersion = "1.0.0"
         }
     }
 }
 
 tasks {
-    create("formatAndLintKotlin") {
+    register("formatAndLintKotlin") {
         group = "formatting"
         description = "Fix Kotlin code style deviations with kotlinter"
         dependsOn(formatKotlin)

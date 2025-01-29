@@ -1,11 +1,18 @@
-package xyz.malefic.compose
+package xyz.malefic.celery
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.application
+import xyz.malefic.celery.ThemeManager.loadTheme
+import xyz.malefic.celery.screens.App1
+import xyz.malefic.celery.screens.Home
+import xyz.malefic.celery.screens.ThemeSelector
 import xyz.malefic.compose.comps.precompose.NavWindow
 import xyz.malefic.compose.comps.text.typography.Heading1
 import xyz.malefic.compose.engine.factory.RowFactory
@@ -19,12 +26,8 @@ import xyz.malefic.compose.nav.RouteManager
 import xyz.malefic.compose.nav.RouteManager.RoutedNavHost
 import xyz.malefic.compose.nav.RouteManager.RoutedSidebar
 import xyz.malefic.compose.nav.RouteManager.navi
-import xyz.malefic.compose.nav.config.MalefiConfigLoader
-import xyz.malefic.compose.screens.App1
-import xyz.malefic.compose.screens.Home
 import xyz.malefic.compose.theming.MaleficTheme
 import xyz.malefic.ext.list.get
-import xyz.malefic.ext.stream.grass
 
 /**
  * Entry point of the application that sets up the main navigation window.
@@ -34,23 +37,26 @@ import xyz.malefic.ext.stream.grass
  */
 fun main() =
     application {
+        var selectedTheme by remember { mutableStateOf("light") }
+
         NavWindow(onCloseRequest = ::exitApplication) {
             // Initialize the route manager
-            RouteManager.initialize(
-                composableMap,
-                grass("/routes.mcf")!!,
-                MalefiConfigLoader(),
-            )
+            RouteManager.initialize {
+                startup("home", composable = { Home(navi) })
+                dynamic("app1", "id", "name?", composable = { params -> App1(id = params[0]!!, name = params[1, null]) })
+                dynamic("hidden", true, "text?", composable = { params -> Heading1(text = params[0, "Nope."]) })
+                static(name = "themes", composable = { ThemeSelector { theme -> selectedTheme = theme } })
+            }
 
-            // Determine the theme file path based on the system's theme (dark or light)
-            val themeInputStream =
-                grass(
-                    if (isSystemInDarkTheme()) "/theme/dark.json" else "/theme/light.json",
-                ) ?: throw IllegalArgumentException("Theme file not found")
+            // Determine the theme file path based on the selected theme
+            val themeInputStream = loadTheme(selectedTheme) ?: throw IllegalArgumentException("Theme file not found")
 
             // Apply the selected theme and invoke the Navigation Menu
             MaleficTheme(themeInputStream) {
                 NavigationMenu()
+                ThemeSelector { theme ->
+                    selectedTheme = theme
+                }
             }
         }
     }
@@ -71,14 +77,3 @@ fun NavigationMenu() {
         background()
     }
 }
-
-/**
- * A map of composable functions used for routing. Each entry maps a route name to a composable
- * function that takes a list of parameters.
- */
-val composableMap: Map<String, @Composable (List<String?>) -> Unit> =
-    mapOf(
-        "App1" to { params -> App1(id = params[0]!!, name = params[1, null]) },
-        "Home" to { _ -> Home(navi) },
-        "Text" to { params -> Heading1(text = params[0, "Nope."]) },
-    )
