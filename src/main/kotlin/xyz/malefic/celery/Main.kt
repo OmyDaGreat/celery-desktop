@@ -4,15 +4,16 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.application
-import xyz.malefic.celery.ThemeManager.loadTheme
 import xyz.malefic.celery.screens.App1
 import xyz.malefic.celery.screens.Home
 import xyz.malefic.celery.screens.ThemeSelector
+import xyz.malefic.celery.util.ThemeManager.loadTheme
 import xyz.malefic.compose.comps.precompose.NavWindow
 import xyz.malefic.compose.comps.text.typography.Heading1
 import xyz.malefic.compose.engine.factory.RowFactory
@@ -40,22 +41,18 @@ fun main() =
         var selectedTheme by remember { mutableStateOf("light") }
 
         NavWindow(onCloseRequest = ::exitApplication) {
-            // Initialize the route manager
             RouteManager.initialize {
-                startup("home", composable = { Home(navi) })
-                dynamic("app1", "id", "name?", composable = { params -> App1(id = params[0]!!, name = params[1, null]) })
-                dynamic("hidden", true, "text?", composable = { params -> Heading1(text = params[0, "Nope."]) })
-                static(name = "themes", composable = { ThemeSelector { theme -> selectedTheme = theme } })
+                startup("home") { Home(navi) }
+                dynamic("app1", true, "id", "name?") { params -> App1(id = params[0]!!, name = params[1, null]) }
+                dynamic("hidden", true, "text?") { params -> Heading1(text = params[0, "Nope."]) }
+                static("themes") { ThemeSelector { theme -> selectedTheme = theme } }
             }
 
-            // Determine the theme file path based on the selected theme
             val themeInputStream = loadTheme(selectedTheme) ?: throw IllegalArgumentException("Theme file not found")
 
-            // Apply the selected theme and invoke the Navigation Menu
-            MaleficTheme(themeInputStream) {
-                NavigationMenu()
-                ThemeSelector { theme ->
-                    selectedTheme = theme
+            key(selectedTheme) {
+                MaleficTheme(themeInputStream) {
+                    NavigationMenu()
                 }
             }
         }
